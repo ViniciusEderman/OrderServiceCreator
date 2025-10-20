@@ -1,3 +1,4 @@
+import { inject, injectable } from "tsyringe";
 import { Logger } from "@/domain/interfaces/logger";
 import { StoreRepository } from "@/domain/interfaces/store-repository";
 import { Status } from "@/domain/order/enterprise/types/status";
@@ -9,13 +10,17 @@ interface UpdateOrderStatusRequest {
   newStatus: Status;
 }
 
+@injectable()
 export class UpdateOrderStatus {
   constructor(
-    private storeRepository: StoreRepository,
-    private logger: Logger
+    @inject("StoreRepository") private storeRepository: StoreRepository,
+    @inject("Logger") private logger: Logger
   ) {}
 
-  async execute({ orderId, newStatus }: UpdateOrderStatusRequest): Promise<Result<Order, DomainError>> {
+  async execute({
+    orderId,
+    newStatus,
+  }: UpdateOrderStatusRequest): Promise<Result<Order, DomainError>> {
     this.logger.info("updating status", {
       orderId,
       newStatus,

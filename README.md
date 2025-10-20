@@ -23,3 +23,5 @@ exemplo de body passado pra order-service
 no serviço de notification vamos consultar um json
 (mock de clients para pegar o seu email ou n° para enviar a notificação)
 
+npx prisma migrate dev --name init
+criação do schema de order com prisma_orm
