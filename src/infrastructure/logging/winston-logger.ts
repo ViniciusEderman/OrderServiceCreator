@@ -1,6 +1,8 @@
 import winston from "winston";
+import { injectable } from 'tsyringe';
 import { Logger } from "@/domain/interfaces/logger";
 
+@injectable()
 export class WinstonLogger implements Logger {
   private logger: winston.Logger;
 

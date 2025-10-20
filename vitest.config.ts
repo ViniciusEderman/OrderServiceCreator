@@ -8,7 +8,8 @@ export default defineConfig({
     clearMocks: true,
     testTimeout: 15000,
     coverage: {
-      provider: 'istanbul'
+      provider: 'istanbul',
+      include: ["src/domain/order/application/use-cases/**"]
     },
   },
 });

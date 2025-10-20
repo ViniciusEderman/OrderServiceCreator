@@ -1,27 +1,24 @@
-import { injectable, inject } from 'tsyringe';
+import { container } from "tsyringe";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { CreateAndPublishOrder } from "@/domain/order/application/use-cases/order-orchestrator";
 import { CreateOrderSchema } from "@/presentation/validators/create-order-validator";
 
-@injectable()
-export class CreateOrderController {
-  constructor(
-    @inject(CreateAndPublishOrder) private createAndPublishOrder: CreateAndPublishOrder
-  ) {}
+export async function CreateOrderController(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const createAndPublisherOrder = container.resolve(CreateAndPublishOrder);
+  const parse = CreateOrderSchema.safeParse(request.body);
 
-  async handle(request: FastifyRequest, reply: FastifyReply) {
-    const parse = CreateOrderSchema.safeParse(request.body);
-
-    if (!parse.success) {
-      return reply.status(400).send({ error: parse.error.flatten().fieldErrors });
-    }
-
-    const result = await this.createAndPublishOrder.execute(parse.data);
-
-    if (result.isFailure) {
-      return reply.status(400).send({ error: result.getError()});
-    }
-
-    return reply.status(201).send(result.getValue());
+  if (!parse.success) {
+    return reply.status(400).send({ error: parse.error.flatten().fieldErrors });
   }
+
+  const result = await createAndPublisherOrder.execute(parse.data);
+
+  if (result.isFailure) {
+    return reply.status(400).send({ error: result.getError() });
+  }
+
+  return reply.status(201).send(result.getValue());
 }

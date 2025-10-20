@@ -1,7 +1,9 @@
-import amqp, { Connection, Channel, ConsumeMessage } from "amqplib";
+import { injectable } from 'tsyringe';
+import amqp, { Connection, Channel } from "amqplib";
 import { IMessageBroker } from "../../domain/interfaces/message-broker";
 import { InfraError, Result } from "@/shared/core/result";
 
+@injectable()
 export class Rabbit implements IMessageBroker {
   private connection!: Connection;
   private channel!: Channel;

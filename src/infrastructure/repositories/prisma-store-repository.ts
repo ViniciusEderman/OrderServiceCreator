@@ -1,8 +1,11 @@
+import { injectable } from 'tsyringe';
 import { StoreRepository } from "@/domain/interfaces/store-repository";
 import { Order } from "@/domain/order/enterprise/entities/order";
 import { InfraError, Result } from "@/shared/core/result";
 import { prisma } from "@/infrastructure/db/prisma";
+import { Status } from "@/domain/order/enterprise/types/status";
 
+@injectable()
 export class PrismaStoreRepository implements StoreRepository {
   async storeOrder(order: Order): Promise<Result<void, InfraError>> {
     try {
@@ -61,11 +64,8 @@ export class PrismaStoreRepository implements StoreRepository {
       const order = Order.create(
         {
           clientId: orderData.clientId,
-          statusHistory: orderData.statusHistory,
-          createdAt: orderData.createdAt,
-          updatedAt: orderData.updatedAt,
+          statusHistory: orderData.statusHistory as unknown as Array<{ status: Status; updatedAt: Date }>
         },
-        orderData.id
       );
 
       return Result.ok(order);
