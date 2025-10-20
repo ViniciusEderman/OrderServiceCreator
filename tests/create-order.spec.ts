@@ -1,3 +1,4 @@
+import "reflect-metadata"
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { InMemoryStoreRepository } from "@/infrastructure/repositories/mocks/in-memory-store-repository";
 import { CreateOrder } from "@/domain/order/application/use-cases/create-order";

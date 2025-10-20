@@ -1,9 +1,13 @@
+import { injectable, inject } from 'tsyringe';
 import { FastifyRequest, FastifyReply } from "fastify";
 import { UpdateOrderStatus } from "@/domain/order/application/use-cases/update-status-order";
 import { UpdateOrderSchema } from "@/presentation/validators/update-order-validator";
 
+@injectable()
 export class UpdateOrderStatusController {
-  constructor(private updateOrderStatus: UpdateOrderStatus) {}
+  constructor(
+    @inject(UpdateOrderStatus) private updateOrderStatus: UpdateOrderStatus
+  ) {}
 
   async handle(request: FastifyRequest, reply: FastifyReply) {
     const { id } = request.params as { id: string };

@@ -1,3 +1,4 @@
+import { injectable, inject } from 'tsyringe';
 import { Status } from "@/domain/order/enterprise/types/status";
 import { Result } from "@/shared/core/result";
 import { CreateOrder } from "./create-order";
@@ -8,10 +9,11 @@ export interface CreateAndPublishOrderRequest {
   status: Status;
 }
 
+@injectable()
 export class CreateAndPublishOrder {
   constructor(
-    private createOrder: CreateOrder,
-    private publisherOrder: PublisherOrder
+    @inject(CreateOrder) private createOrder: CreateOrder,
+    @inject(PublisherOrder) private publisherOrder: PublisherOrder
   ) {}
 
   async execute(request: CreateAndPublishOrderRequest) {

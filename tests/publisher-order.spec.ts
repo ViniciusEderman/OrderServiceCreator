@@ -1,3 +1,4 @@
+import "reflect-metadata"
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { PublisherOrder } from "@/domain/order/application/use-cases/publisher-order";
 import { IMessageBroker } from "@/domain/interfaces/message-broker";

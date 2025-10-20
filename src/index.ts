@@ -1,5 +1,7 @@
-import { env } from "./infrastructure/config/env";
-import { createServer } from "./infrastructure/http/http-server";
+import "reflect-metadata";
+import { env } from "@/infrastructure/config/env";
+import { createServer } from "@/infrastructure/http/http-server";
+import "@/shared/container/container";
 
 async function bootstrap() {
   try {

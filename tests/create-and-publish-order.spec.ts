@@ -1,3 +1,4 @@
+import "reflect-metadata"
 import { describe, it, beforeEach, expect, vi } from "vitest";
 import { CreateAndPublishOrder } from "@/domain/order/application/use-cases/order-orchestrator";
 import { Result } from "@/shared/core/result";

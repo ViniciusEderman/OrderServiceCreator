@@ -1,10 +1,13 @@
+import { injectable, inject } from 'tsyringe';
 import { FastifyRequest, FastifyReply } from "fastify";
-import { container } from "tsyringe";
 import { CreateAndPublishOrder } from "@/domain/order/application/use-cases/order-orchestrator";
 import { CreateOrderSchema } from "@/presentation/validators/create-order-validator";
 
+@injectable()
 export class CreateOrderController {
-  constructor(private createAndPublishOrder: CreateAndPublishOrder) {}
+  constructor(
+    @inject(CreateAndPublishOrder) private createAndPublishOrder: CreateAndPublishOrder
+  ) {}
 
   async handle(request: FastifyRequest, reply: FastifyReply) {
     const parse = CreateOrderSchema.safeParse(request.body);
