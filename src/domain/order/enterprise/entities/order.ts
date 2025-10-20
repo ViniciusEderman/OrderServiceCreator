@@ -15,8 +15,16 @@ export class Order extends Entity<OrderProps> {
     return this.props.statusHistory;
   }
 
+  get clientId() {
+    return this.props.clientId;
+  }
+
   get currentStatus(): Status {
     return this.props.statusHistory[this.props.statusHistory.length - 1].status;
+  }
+
+  get createdAt() {
+    return this.props.createdAt;
   }
 
   get updatedAt() {

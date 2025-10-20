@@ -1,3 +1,4 @@
+import { inject, injectable } from "tsyringe";
 import { StoreRepository } from "@/domain/interfaces/store-repository";
 import { Status } from "@/domain/order/enterprise/types/status";
 import { Order } from "@/domain/order/enterprise/entities/order";
@@ -11,10 +12,11 @@ export interface CreateOrderUseCaseRequest {
   clientId: String;
 }
 
+@injectable()
 export class CreateOrder {
   constructor(
-    private storeRepository: StoreRepository,
-    private logger: Logger
+    @inject("StoreRepository") private storeRepository: StoreRepository,
+    @inject("Logger") private logger: Logger
   ) {}
 
   async execute({
@@ -23,7 +25,7 @@ export class CreateOrder {
   }: CreateOrderUseCaseRequest): Promise<CreateOrderUseCaseResponse> {
     if (!clientId || typeof clientId !== "string" || clientId.trim() === "") {
       this.logger.info("invalid or empty clientId", { clientId });
-      
+
       return Result.fail(
         new DomainError(
           "INVALID_CLIENT_ID",
@@ -42,7 +44,7 @@ export class CreateOrder {
         },
       ],
     });
-    
+
     const storeOrderResult = await this.storeRepository.storeOrder(order);
 
     if (storeOrderResult.isFailure) {

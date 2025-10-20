@@ -1,3 +1,4 @@
+import { inject, injectable } from "tsyringe";
 import { Logger } from "@/domain/interfaces/logger";
 import { IMessageBroker } from "@/domain/interfaces/message-broker";
 import { Order } from "@/domain/order/enterprise/entities/order";
@@ -5,8 +6,12 @@ import { DomainError, Result } from "@/shared/core/result";
 
 type PublishResult = Result<void, DomainError>;
 
+@injectable()
 export class PublisherOrder {
-  constructor(private logger: Logger, private messageBroker: IMessageBroker) {}
+  constructor(
+    @inject("Logger") private logger: Logger,
+    @inject("MessageBroker") private messageBroker: IMessageBroker
+  ) {}
 
   async publish(order: Order): Promise<PublishResult> {
     this.logger.info("publishing order...", {

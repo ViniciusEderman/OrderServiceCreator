@@ -3,7 +3,6 @@ import { Result } from "@/shared/core/result";
 import { CreateOrder } from "./create-order";
 import { PublisherOrder } from "./publisher-order";
 
-
 export interface CreateAndPublishOrderRequest {
   clientId: string;
   status: Status;
