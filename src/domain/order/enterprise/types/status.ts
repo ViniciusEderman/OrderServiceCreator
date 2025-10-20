@@ -1,0 +1,1 @@
+export type Status = 'pending' | 'accepted' | 'finished' | 'canceled';
