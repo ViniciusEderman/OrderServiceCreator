@@ -1,9 +1,10 @@
-import "reflect-metadata"
+import "reflect-metadata";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { UpdateOrderStatus } from "@/domain/order/application/use-cases/update-status-order";
 import { InMemoryStoreRepository } from "@/infrastructure/repositories/mocks/in-memory-store-repository";
 import { Logger } from "@/domain/interfaces/logger";
 import { Order } from "@/domain/order/enterprise/entities/order";
+import { AppError, Result } from "@/shared/core/result";
 
 describe("UpdateOrderStatus Use Case", () => {
   let storeRepository: InMemoryStoreRepository;
@@ -52,7 +53,7 @@ describe("UpdateOrderStatus Use Case", () => {
       newStatus: "accepted",
     });
 
-    expect(result.isFailure).toBe(true);
+    expect(!result.isSuccess).toBe(true);
     expect(result.getError().code).toBe("NOT_FOUND");
   });
 
@@ -62,7 +63,37 @@ describe("UpdateOrderStatus Use Case", () => {
       newStatus: "pending",
     });
 
-    expect(result.isFailure).toBe(true);
+    expect(!result.isSuccess).toBe(true);
     expect(result.getError().code).toBe("INVALID_STATUS_CHANGE");
+  });
+
+  it("should log and return failure if saving updated order fails", async () => {
+    const newStatus = "accepted";
+
+    const spy = vi
+      .spyOn(storeRepository, "updateOrder")
+      .mockResolvedValueOnce(
+        Result.fail(
+          new AppError("UPDATE_ORDER_FAILED", "failed to update order")
+        )
+      );
+
+    const result = await updateOrderStatus.execute({
+      orderId: order.id.toString(),
+      newStatus,
+    });
+
+    expect(!result.isSuccess).toBe(true);
+    expect(result.getError().code).toBe("UPDATE_ORDER_FAILED");
+    
+    expect(fakeLogger.error).toHaveBeenCalledWith(
+      "error to save new status on db",
+      expect.objectContaining({
+        orderId: order.id.toString(),
+        error: expect.any(AppError),
+      })
+    );
+
+    spy.mockRestore();
   });
 });

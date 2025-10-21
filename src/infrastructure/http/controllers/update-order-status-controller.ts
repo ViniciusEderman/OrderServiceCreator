@@ -1,7 +1,8 @@
 import { container } from "tsyringe";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { UpdateOrderStatus } from "@/domain/order/application/use-cases/update-status-order";
-import { UpdateOrderSchema } from "@/presentation/validators/update-order-validator";
+import { UpdateOrderSchema } from "@/infrastructure/http/validators/update-order-validator";
+import { OrderPresenter } from "@/infrastructure/http/presenters/order-presenter";
 
 export async function UpdateOrderStatusController(
   request: FastifyRequest,
@@ -20,9 +21,10 @@ export async function UpdateOrderStatusController(
     newStatus: parse.data.newStatus,
   });
 
-  if (result.isFailure) {
+  if (!result.isSuccess) {
     return reply.status(400).send({ error: result.getError().message });
   }
 
-  return reply.status(200).send(result.getValue());
+  const order = result.getValue();
+  return reply.status(200).send(OrderPresenter.toHTTP(order));
 }

@@ -1,8 +1,9 @@
-import "reflect-metadata"
+import "reflect-metadata";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { InMemoryStoreRepository } from "@/infrastructure/repositories/mocks/in-memory-store-repository";
 import { CreateOrder } from "@/domain/order/application/use-cases/create-order";
 import { Logger } from "@/domain/interfaces/logger";
+import { AppError, Result } from "@/shared/core/result";
+import { InMemoryStoreRepository } from "@/infrastructure/repositories/mocks/in-memory-store-repository";
 
 describe("CreateOrder Use Case", () => {
   let storeRepository: InMemoryStoreRepository;
@@ -41,7 +42,33 @@ describe("CreateOrder Use Case", () => {
       clientId: invalidClientId,
     });
 
-    expect(result.isFailure).toBe(true);
+    expect(!result.isSuccess).toBe(true);
     expect(result.getError().code).toBe("INVALID_CLIENT_ID");
+  });
+
+  it("should return failure and log error if storeOrder fails", async () => {
+    const mockError = new AppError(
+      "STORE_ORDER_FAILED",
+      "failed to store order"
+    );
+    
+    vi.spyOn(storeRepository, "storeOrder").mockResolvedValueOnce(
+      Result.fail(mockError)
+    );
+
+    const result = await createOrder.execute({
+      status: "pending",
+      clientId: "83f87c4f-5480-41f4-84e7-b624284c272c",
+    });
+
+    expect(!result.isSuccess).toBe(true);
+    expect(result.getError()).toEqual(mockError);
+    
+    expect(fakeLogger.error).toHaveBeenCalledWith(
+      "error to save order on db",
+      expect.objectContaining({
+        error: mockError,
+      })
+    );
   });
 });

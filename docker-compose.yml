@@ -1,9 +1,26 @@
 services:
+  order_service:
+    build: .
+    container_name: orders_service
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/orders
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - rabbitmq
+      
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # Porta do broker
+      - "5672:5672" # Porta do broker
       - "15672:15672" # Painel web
 
   postgres:
@@ -18,7 +35,6 @@ services:
       POSTGRES_DB: myapp
     volumes:
       - pgdata:/var/lib/postgresql/data
-      
+
 volumes:
   pgdata:
-      

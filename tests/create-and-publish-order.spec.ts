@@ -1,8 +1,7 @@
 import "reflect-metadata"
 import { describe, it, beforeEach, expect, vi } from "vitest";
 import { CreateAndPublishOrder } from "@/domain/order/application/use-cases/order-orchestrator";
-import { Result } from "@/shared/core/result";
-import { DomainError } from "@/shared/core/result";
+import { Result, AppError } from "@/shared/core/result";
 
 const mockCreateOrder = {
   execute: vi.fn(),
@@ -25,9 +24,9 @@ describe("CreateAndPublishOrder Use Case", () => {
 
   it("should create and publish an order successfully", async () => {
     const fakeOrder = { 
-        id: "ad6409b3-0c27",
-        clientId: "83f87c4f-5480-41f4-84e7-b624284c272c",
-        status: "pending" 
+      id: "ad6409b3-0c27",
+      clientId: "83f87c4f-5480-41f4-84e7-b624284c272c",
+      status: "pending" 
     };
 
     mockCreateOrder.execute.mockResolvedValue(Result.ok(fakeOrder));
@@ -45,7 +44,7 @@ describe("CreateAndPublishOrder Use Case", () => {
   });
 
   it("should fail if order creation fails", async () => {
-    const error = new DomainError("CREATE_FAIL", "Failed to create order");
+    const error = new AppError("CREATE_FAIL", "Failed to create order");
 
     mockCreateOrder.execute.mockResolvedValue(Result.fail(error));
 
@@ -55,13 +54,17 @@ describe("CreateAndPublishOrder Use Case", () => {
     });
 
     expect(mockPublisherOrder.publish).not.toHaveBeenCalled();
-    expect(result.isFailure).toBe(true);
+    expect(!result.isSuccess).toBe(true);
     expect(result.getError()).toBe(error);
   });
 
   it("should fail if publishing fails", async () => {
-    const fakeOrder = { id: "ad6409b3", clientId: "83f87c4f-5480-41f4-84e7-b624284c272c", status: "pending" };
-    const error = new DomainError("PUBLISH_FAIL", "Failed to publish order");
+    const fakeOrder = { 
+      id: "ad6409b3", 
+      clientId: "83f87c4f-5480-41f4-84e7-b624284c272c", 
+      status: "pending" 
+    };
+    const error = new AppError("PUBLISH_FAIL", "Failed to publish order");
 
     mockCreateOrder.execute.mockResolvedValue(Result.ok(fakeOrder));
     mockPublisherOrder.publish.mockResolvedValue(Result.fail(error));
@@ -73,7 +76,7 @@ describe("CreateAndPublishOrder Use Case", () => {
 
     expect(mockCreateOrder.execute).toHaveBeenCalled();
     expect(mockPublisherOrder.publish).toHaveBeenCalled();
-    expect(result.isFailure).toBe(true);
+    expect(!result.isSuccess).toBe(true);
     expect(result.getError()).toBe(error);
   });
 });

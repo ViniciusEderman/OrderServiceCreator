@@ -1,8 +1,9 @@
-import { injectable, inject } from 'tsyringe';
+import { injectable, inject } from "tsyringe";
 import { Status } from "@/domain/order/enterprise/types/status";
 import { Result } from "@/shared/core/result";
-import { CreateOrder } from "./create-order";
-import { PublisherOrder } from "./publisher-order";
+import { CreateOrder } from "@/domain/order/application/use-cases/create-order";
+import { PublisherOrder } from "@/domain/order/application/use-cases/publisher-order";
+import { Order } from "@/domain/order/enterprise/entities/order";
 
 export interface CreateAndPublishOrderRequest {
   clientId: string;
@@ -16,14 +17,18 @@ export class CreateAndPublishOrder {
     @inject(PublisherOrder) private publisherOrder: PublisherOrder
   ) {}
 
-  async execute(request: CreateAndPublishOrderRequest) {
+  async execute(request: CreateAndPublishOrderRequest): Promise<Result<Order>> {
     const orderResult = await this.createOrder.execute(request);
-    if (orderResult.isFailure) return orderResult;
+    if (!orderResult.isSuccess) {
+      return Result.fail(orderResult.getError());
+    }
 
     const order = orderResult.getValue();
     const publishResult = await this.publisherOrder.publish(order);
 
-    if (publishResult.isFailure) return publishResult;
+    if (!publishResult.isSuccess) {
+      return Result.fail(publishResult.getError());
+    }
 
     return Result.ok(order);
   }

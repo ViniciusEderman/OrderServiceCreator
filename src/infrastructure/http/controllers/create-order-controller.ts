@@ -1,7 +1,8 @@
 import { container } from "tsyringe";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { CreateAndPublishOrder } from "@/domain/order/application/use-cases/order-orchestrator";
-import { CreateOrderSchema } from "@/presentation/validators/create-order-validator";
+import { CreateOrderSchema } from "@/infrastructure/http/validators/create-order-validator";
+import { OrderPresenter } from "@/infrastructure/http/presenters/order-presenter";
 
 export async function CreateOrderController(
   request: FastifyRequest,
@@ -16,9 +17,10 @@ export async function CreateOrderController(
 
   const result = await createAndPublisherOrder.execute(parse.data);
 
-  if (result.isFailure) {
+  if (!result.isSuccess) {
     return reply.status(400).send({ error: result.getError() });
   }
 
-  return reply.status(201).send(result.getValue());
+  const order = result.getValue();
+  return reply.status(201).send(OrderPresenter.toHTTP(order));
 }

@@ -4,7 +4,7 @@ import { PublisherOrder } from "@/domain/order/application/use-cases/publisher-o
 import { IMessageBroker } from "@/domain/interfaces/message-broker";
 import { Logger } from "@/domain/interfaces/logger";
 import { Order } from "@/domain/order/enterprise/entities/order";
-import { Result, DomainError } from "@/shared/core/result";
+import { Result, AppError } from "@/shared/core/result";
 
 const fakeLogger: Logger = {
   info: vi.fn(),
@@ -36,7 +36,7 @@ describe("PublisherOrder Use Case", () => {
 
   it("should publish the order successfully", async () => {
     (fakeMessageBroker.publish as any).mockResolvedValue(
-      Result.ok<void, DomainError>(undefined)
+      Result.ok(undefined)
     );
 
     const result = await publisher.publish(order);
@@ -53,15 +53,15 @@ describe("PublisherOrder Use Case", () => {
   });
 
   it("should return failure if broker.publish fails", async () => {
-    const fakeError = new DomainError("BROKER_ERROR", "Broker failed");
+    const fakeError = new AppError("BROKER_ERROR", "Broker failed");
 
     (fakeMessageBroker.publish as any).mockResolvedValue(
-      Result.fail<void, DomainError>(fakeError)
+      Result.fail(fakeError)
     );
 
     const result = await publisher.publish(order);
 
-    expect(result.isFailure).toBe(true);
+    expect(!result.isSuccess).toBe(true);
     expect(result.getError().code).toBe("PUBLICATION_FAILURE");
     expect(fakeLogger.error).toHaveBeenCalledWith(
       "failed to publish order",

@@ -1,13 +1,13 @@
-import { injectable } from 'tsyringe';
+import { injectable } from "tsyringe";
 import { StoreRepository } from "@/domain/interfaces/store-repository";
 import { Order } from "@/domain/order/enterprise/entities/order";
-import { InfraError, Result } from "@/shared/core/result";
+import { AppError, Result } from "@/shared/core/result";
 import { prisma } from "@/infrastructure/db/prisma";
 import { Status } from "@/domain/order/enterprise/types/status";
 
 @injectable()
 export class PrismaStoreRepository implements StoreRepository {
-  async storeOrder(order: Order): Promise<Result<void, InfraError>> {
+  async storeOrder(order: Order): Promise<Result<void>> {
     try {
       await prisma.order.create({
         data: {
@@ -19,17 +19,17 @@ export class PrismaStoreRepository implements StoreRepository {
         },
       });
 
-      return Result.ok<void, InfraError>(undefined);
+      return Result.ok(undefined);
     } catch (error) {
       return Result.fail(
-        new InfraError("STORE_ORDER_FAILED", "Failed to store order", {
+        new AppError("STORE_ORDER_FAILED", "failed to store order", {
           originalError: error instanceof Error ? error.message : String(error),
         })
       );
     }
   }
 
-  async updateOrder(order: Order): Promise<Result<void, InfraError>> {
+  async updateOrder(order: Order): Promise<Result<void>> {
     try {
       await prisma.order.update({
         where: { id: order.id.toString() },
@@ -39,17 +39,17 @@ export class PrismaStoreRepository implements StoreRepository {
         },
       });
 
-      return Result.ok<void, InfraError>(undefined);
+      return Result.ok(undefined);
     } catch (error) {
       return Result.fail(
-        new InfraError("UPDATE_ORDER_FAILED", "Failed to update order", {
+        new AppError("UPDATE_ORDER_FAILED", "failed to update order", {
           originalError: error instanceof Error ? error.message : String(error),
         })
       );
     }
   }
 
-  async getOrderById(id: string): Promise<Result<Order, InfraError>> {
+  async getOrderById(id: string): Promise<Result<Order>> {
     try {
       const orderData = await prisma.order.findUnique({
         where: { id },
@@ -57,21 +57,25 @@ export class PrismaStoreRepository implements StoreRepository {
 
       if (!orderData) {
         return Result.fail(
-          new InfraError("ORDER_NOT_FOUND", `Order with id ${id} not found`)
+          new AppError("ORDER_NOT_FOUND", `order with id ${id} not found`)
         );
       }
 
       const order = Order.create(
         {
           clientId: orderData.clientId,
-          statusHistory: orderData.statusHistory as unknown as Array<{ status: Status; updatedAt: Date }>
+          statusHistory: orderData.statusHistory as Array<{
+            status: Status;
+            updatedAt: Date;
+          }>,
         },
+        orderData.id
       );
 
       return Result.ok(order);
     } catch (error) {
       return Result.fail(
-        new InfraError("GET_ORDER_FAILED", "Failed to get order by id", {
+        new AppError("GET_ORDER_FAILED", "failed to get order by id", {
           originalError: error instanceof Error ? error.message : String(error),
         })
       );
