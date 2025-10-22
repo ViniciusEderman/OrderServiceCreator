@@ -7,22 +7,32 @@ import { AppError, Result } from "@/shared/core/result";
 export class Rabbit implements IMessageBroker {
   private connection!: Connection;
   private channel!: Channel;
-  private url: string;
+  private url: string = process.env.RABBITMQ_URL || "amqp://localhost"
+  private isConnected = false;
 
-  constructor(url?: string) {
-    this.url = url || process.env.RABBITMQ_URL || "amqp://localhost";
+  constructor() {
   }
 
-  async connect(): Promise<void> {
-    try {
-      this.connection = await amqp.connect(this.url);
-      this.channel = await this.connection.createChannel();
-
-      console.log("rabbitMQ connected successfully.");
-    } catch (error) {
-      console.error("error connecting to RabbitMQ:", error);
-      throw error;
+  private async ensureConnected(): Promise<void> {
+    if (!this.isConnected) {
+      await this.connect();
     }
+  }
+
+  async connect(retries = 5, delayMs = 2000): Promise<void> {
+    for (let i = 0; i < retries; i++) {
+      try {
+        this.connection = await amqp.connect(this.url);
+        this.channel = await this.connection.createChannel();
+        this.isConnected = true;
+        console.log("mq connected successfully.");
+        return;
+      } catch (error) {
+        console.log(`retry ${i + 1}/${retries} failed. waiting ${delayMs}ms...`);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+    throw new Error("failed to connect to RabbitMQ after retries.");
   }
 
   async publish(
@@ -30,6 +40,7 @@ export class Rabbit implements IMessageBroker {
     message: any
   ): Promise<Result<void>> {
     try {
+      await this.ensureConnected();
       await this.channel.assertQueue(queue, { durable: true });
       const buffer = Buffer.from(JSON.stringify(message));
       this.channel.sendToQueue(queue, buffer, { persistent: true });

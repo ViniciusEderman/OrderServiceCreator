@@ -1,21 +1,23 @@
 FROM node:22-alpine
 
+RUN addgroup -S nodegroup && adduser -S nodeuser -G nodegroup
+
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+COPY tsconfig.json ./
 
-RUN addgroup -S nodegroup && adduser -S nodeuser -G nodegroup
+RUN npm ci
 
-COPY . .
+COPY src/infrastructure/db/schema/ ./src/infrastructure/db/schema/
 
-# Ajusta permissões para o novo usuário
-RUN chown -R nodeuser:nodegroup /app
+RUN npx prisma generate --schema=./src/infrastructure/db/schema/schema.prisma
+
+COPY src/ ./src/
 
 USER nodeuser
 
-# Expõe a porta padrão
-EXPOSE 1818
+EXPOSE 3000
 
 CMD ["npm", "run", "dev"]

@@ -1,17 +1,14 @@
 services:
   order_service:
-    build: .
-    container_name: orders_service
-    command: npm run dev
+    build:
+      context: .
+      dockerfile: ./src/Dockerfile
     ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/orders
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - "3000:3838"
+    env_file:
+      - .env
     volumes:
-      - .:/app
-      - /app/node_modules
+      - ./src:/app/src
     depends_on:
       - postgres
       - rabbitmq

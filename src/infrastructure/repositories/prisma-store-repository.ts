@@ -4,6 +4,7 @@ import { Order } from "@/domain/order/enterprise/entities/order";
 import { AppError, Result } from "@/shared/core/result";
 import { prisma } from "@/infrastructure/db/prisma";
 import { Status } from "@/domain/order/enterprise/types/status";
+import { UniqueEntityID } from "@/shared/entities/unique-entity-id";
 
 @injectable()
 export class PrismaStoreRepository implements StoreRepository {
@@ -31,6 +32,9 @@ export class PrismaStoreRepository implements StoreRepository {
 
   async updateOrder(order: Order): Promise<Result<void>> {
     try {
+      console.log("Infra - orderId:", order.id.toString());
+      console.log("Infra - clientId:", order.clientId.toString());
+
       await prisma.order.update({
         where: { id: order.id.toString() },
         data: {
@@ -64,12 +68,12 @@ export class PrismaStoreRepository implements StoreRepository {
       const order = Order.create(
         {
           clientId: orderData.clientId,
-          statusHistory: orderData.statusHistory as Array<{
+          statusHistory: orderData.statusHistory as unknown as Array<{
             status: Status;
             updatedAt: Date;
           }>,
         },
-        orderData.id
+        new UniqueEntityID(orderData.id)
       );
 
       return Result.ok(order);

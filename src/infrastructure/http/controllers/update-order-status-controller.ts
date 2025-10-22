@@ -12,6 +12,8 @@ export async function UpdateOrderStatusController(
   const { id } = request.params as { id: string };
   const parse = UpdateOrderSchema.safeParse(request.body);
 
+  console.log("AHAHAHAHHAHA", id);
+
   if (!parse.success) {
     return reply.status(400).send({ error: parse.error.flatten().fieldErrors });
   }

@@ -25,10 +25,10 @@ container.registerSingleton<IMessageBroker>(
 
 container.registerSingleton<Logger>("Logger", WinstonLogger);
 
-container.registerSingleton<UpdateOrderStatus>(UpdateOrderStatus);
+container.registerSingleton<PublisherOrder>(PublisherOrder);
 
 container.registerSingleton<CreateOrder>(CreateOrder);
 
-container.registerSingleton<PublisherOrder>(PublisherOrder);
+container.registerSingleton<UpdateOrderStatus>(UpdateOrderStatus);
 
 container.registerSingleton<CreateAndPublishOrder>(CreateAndPublishOrder);

@@ -45,10 +45,9 @@ export class UpdateOrderStatus {
       );
     }
 
-    order.statusHistory.push({ status: newStatus, updatedAt: new Date() });
-    order.touch();
-
+    order.updateStatus(newStatus);
     const saveResult = await this.storeRepository.updateOrder(order);
+    
     if (!saveResult.isSuccess) {
       this.logger.error("error to save new status on db", {
         orderId,
