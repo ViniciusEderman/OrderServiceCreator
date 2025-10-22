@@ -1,27 +1,35 @@
-# DOMAIN
-
 ORDER:
     [] - criação de pedido
-    [] - atualização do pedido(status: pendente, aceito, cancelado e finalizado)
+    [] - atualização do pedido(status: Status)
     
 
 NOTIFICATION USER(ORDER):
-Notificação via(email/sms) baseado no status do pedido
+Notificação via(email | sms) baseado no status do pedido
 
-# Infrastructure
-(retentativa)
-
-
+exemplo de body passado pra order-service
 {
-  orderId: "83f87c4f989898",
-  clientId: "83f87c4f-5480-41f4-84e7-b624284c272c",
+  clientId: "83f87c4f989898",
   status: "pending"
 }
 
-exemplo de body passado pra order-service
+exemplo para update order: lembre d epassar o orderId na url
+{
+  "newStatus": "finished"
+}
 
-no serviço de notification vamos consultar um json
-(mock de clients para pegar o seu email ou n° para enviar a notificação)
-
+criação do schema com prisma_orm:
 npx prisma migrate dev --name init
-criação do schema de order com prisma_orm
+
+DOCKER:
+docker-compose build --no-cache && docker-compose up
+
+# Arquitetura: 
+Clean Architecture / Hexagonal Architecture (Ports & Adapters)
+Motivo -> "O domínio é o centro da aplicação e tudo o mais deve depender dele — nunca o contrário." - by Robert C. Martin
+As interfaces fazem o papel de Ports, enquanto suas implementações concretas são os Adapters.
+Uso do conceito DIP(SOLID) --> Testabilidade(mocks de use-cases) + baixo acoplamento + alta capacidade de evolução e substituição de tecnologias(trocar o prisma por outro ORM ou trocar o winston por outro logging)
+Order.create() implementa um Factory Method(pattern)
+
+MELHORIAS para implementar:
+Rota de update como será publicado na fila para o consumo do NotificationService?
+Implementar logica de retry para fila 

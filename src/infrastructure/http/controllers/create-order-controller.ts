@@ -5,16 +5,13 @@ import { CreateAndPublishOrder } from "@/domain/order/application/use-cases/orde
 import { CreateOrderSchema } from "@/infrastructure/http/validators/create-order-validator";
 import { OrderPresenter } from "@/infrastructure/http/presenters/order-presenter";
 
-const createAndPublisherOrder = container.resolve(CreateAndPublishOrder);
-
-const logger = container.resolve<Logger>("Logger");
-
 export async function CreateOrderController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  
   const parse = CreateOrderSchema.safeParse(request.body);
+  const createAndPublisherOrder = container.resolve(CreateAndPublishOrder);
+  const logger = container.resolve<Logger>("Logger");
 
   if (!parse.success) {
     logger.warn("validation error in CreateOrderController", {
