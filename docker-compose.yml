@@ -1,0 +1,37 @@
+services:
+  order_service:
+    build:
+      context: .
+      dockerfile: ./src/Dockerfile
+    ports:
+      - "3000:3838"
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+    depends_on:
+      - postgres
+      - rabbitmq
+      
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # Porta do broker
+      - "15672:15672" # Painel web
+
+  postgres:
+    image: postgres:16
+    container_name: postgres_db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: myapp
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
