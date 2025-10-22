@@ -26,9 +26,8 @@ describe("PublisherOrder Use Case", () => {
   beforeEach(() => {
     publisher = new PublisherOrder(fakeLogger, fakeMessageBroker as any);
     order = Order.create({
-      clientId: "fake-client-123",
+      clientId: "83f87c4f-5480-41f4-84e7-b624284c272c",
       statusHistory: [{ status: "pending", updatedAt: new Date() }],
-      createdAt: new Date(),
     });
 
     vi.clearAllMocks();
@@ -42,6 +41,8 @@ describe("PublisherOrder Use Case", () => {
     const result = await publisher.publish(order);
 
     expect(result.isSuccess).toBe(true);
+    expect(fakeMessageBroker.publish).toHaveBeenCalledWith("orders", order);
+    
     expect(fakeLogger.info).toHaveBeenCalledWith(
       "publishing order...",
       expect.objectContaining({ orderId: order.id.toString() })
@@ -53,7 +54,7 @@ describe("PublisherOrder Use Case", () => {
   });
 
   it("should return failure if broker.publish fails", async () => {
-    const fakeError = new AppError("BROKER_ERROR", "Broker failed");
+    const fakeError = new AppError("BROKER_FAILURE", "failed to publish message to rabbitmq");
 
     (fakeMessageBroker.publish as any).mockResolvedValue(
       Result.fail(fakeError)
@@ -61,11 +62,27 @@ describe("PublisherOrder Use Case", () => {
 
     const result = await publisher.publish(order);
 
-    expect(!result.isSuccess).toBe(true);
-    expect(result.getError().code).toBe("PUBLICATION_FAILURE");
+    expect(result.isSuccess).toBe(false);
+    expect(result.getError()).toEqual(fakeError);
     expect(fakeLogger.error).toHaveBeenCalledWith(
       "failed to publish order",
-      expect.objectContaining({ orderId: order.id.toString() })
+      expect.objectContaining({ 
+        orderId: order.id.toString(),
+        error: fakeError 
+      })
     );
+  });
+
+  it("should handle broker connection issues", async () => {
+    const connectionError = new AppError("BROKER_CONNECTION_FAILED", "failed to connect to rabbitmq");
+
+    (fakeMessageBroker.publish as any).mockResolvedValue(
+      Result.fail(connectionError)
+    );
+
+    const result = await publisher.publish(order);
+
+    expect(result.isSuccess).toBe(false);
+    expect(result.getError().code).toBe("BROKER_CONNECTION_FAILED");
   });
 });

@@ -23,19 +23,12 @@ export class PublisherOrder {
     if (!publishResult.isSuccess) {
       this.logger.error("failed to publish order", {
         orderId: order.id.toString(),
+        error: publishResult.getError(),
       });
 
-      return Result.fail<AppError>(
-        new AppError(
-          "PUBLICATION_FAILURE",
-          "the system failed to finalize the order publication process.",
-          {
-            orderId: order.id.toString(),
-            originalError: publishResult.getError(),
-          }
-        )
-      );
+      return Result.fail(publishResult.getError());
     }
+    
     this.logger.info("order published successfully", {
       orderId: order.id.toString(),
     });

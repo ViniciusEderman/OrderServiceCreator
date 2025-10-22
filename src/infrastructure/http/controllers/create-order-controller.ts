@@ -1,24 +1,43 @@
 import { container } from "tsyringe";
 import { FastifyRequest, FastifyReply } from "fastify";
+import { Logger } from "@/domain/interfaces/logger";
 import { CreateAndPublishOrder } from "@/domain/order/application/use-cases/order-orchestrator";
 import { CreateOrderSchema } from "@/infrastructure/http/validators/create-order-validator";
 import { OrderPresenter } from "@/infrastructure/http/presenters/order-presenter";
+
+const createAndPublisherOrder = container.resolve(CreateAndPublishOrder);
+
+const logger = container.resolve<Logger>("Logger");
 
 export async function CreateOrderController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const createAndPublisherOrder = container.resolve(CreateAndPublishOrder);
+  
   const parse = CreateOrderSchema.safeParse(request.body);
 
   if (!parse.success) {
-    return reply.status(400).send({ error: parse.error.flatten().fieldErrors });
+    logger.warn("validation error in CreateOrderController", {
+      errors: parse.error.flatten().fieldErrors,
+      body: request.body,
+    });
+
+    return reply.status(400).send({
+      error: "invalid request payload",
+    });
   }
 
   const result = await createAndPublisherOrder.execute(parse.data);
 
   if (!result.isSuccess) {
-    return reply.status(400).send({ error: result.getError() });
+    logger.error("create and publisher failed in CreateOrderController", {
+      error: result.getError(),
+      data: parse.data,
+    });
+
+    return reply.status(400).send({
+      error: "operation failed",
+    });
   }
 
   const order = result.getValue();

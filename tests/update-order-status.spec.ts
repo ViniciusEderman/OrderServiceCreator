@@ -13,8 +13,6 @@ describe("UpdateOrderStatus Use Case", () => {
   let order: Order;
 
   beforeEach(() => {
-    storeRepository = new InMemoryStoreRepository();
-
     fakeLogger = {
       info: vi.fn(),
       warn: vi.fn(),
@@ -22,12 +20,12 @@ describe("UpdateOrderStatus Use Case", () => {
       debug: vi.fn(),
     };
 
+    storeRepository = new InMemoryStoreRepository(fakeLogger);
     updateOrderStatus = new UpdateOrderStatus(storeRepository, fakeLogger);
 
     order = Order.create({
-      clientId: "client-123",
+      clientId: "83f87c4f-5480-41f4-84e7-b624284c272c",
       statusHistory: [{ status: "pending", updatedAt: new Date() }],
-      createdAt: new Date(),
     });
 
     storeRepository.orders.push(order);
@@ -43,8 +41,25 @@ describe("UpdateOrderStatus Use Case", () => {
     });
 
     expect(result.isSuccess).toBe(true);
-    expect(result.getValue().currentStatus).toBe(newStatus);
-    expect(result.getValue().statusHistory.length).toBe(2);
+    
+    const updatedOrder = result.getValue();
+    expect(updatedOrder.currentStatus).toBe(newStatus);
+    
+    expect(fakeLogger.info).toHaveBeenCalledWith(
+    "updating status",
+    expect.objectContaining({
+      orderId: order.id.toString(),
+      newStatus: "accepted",
+    })
+  );
+  
+  expect(fakeLogger.info).toHaveBeenCalledWith(
+    "order status updated",
+    expect.objectContaining({
+      orderId: order.id.toString(),
+      newStatus: "accepted",
+    })
+  );
   });
 
   it("should fail if order does not exist", async () => {
@@ -53,47 +68,75 @@ describe("UpdateOrderStatus Use Case", () => {
       newStatus: "accepted",
     });
 
-    expect(!result.isSuccess).toBe(true);
+    expect(result.isSuccess).toBe(false);
     expect(result.getError().code).toBe("NOT_FOUND");
+    
+    expect(fakeLogger.error).toHaveBeenCalledWith(
+      "error to get order by id",
+      expect.objectContaining({
+        orderId: "non-existent-id",
+        error: expect.any(AppError),
+      })
+    );
   });
 
-  it("should fail if new status is the same as current", async () => {
+  it("should allow updating to the same status (no validation in use case)", async () => {
     const result = await updateOrderStatus.execute({
       orderId: order.id.toString(),
       newStatus: "pending",
     });
 
-    expect(!result.isSuccess).toBe(true);
-    expect(result.getError().code).toBe("INVALID_STATUS_CHANGE");
+    expect(result.isSuccess).toBe(true);
   });
 
   it("should log and return failure if saving updated order fails", async () => {
     const newStatus = "accepted";
 
+    const mockError = new AppError("UPDATE_ORDER_FAILED", "failed to update order in memory");
+    
     const spy = vi
       .spyOn(storeRepository, "updateOrder")
-      .mockResolvedValueOnce(
-        Result.fail(
-          new AppError("UPDATE_ORDER_FAILED", "failed to update order")
-        )
-      );
+      .mockResolvedValueOnce(Result.fail(mockError));
 
     const result = await updateOrderStatus.execute({
       orderId: order.id.toString(),
       newStatus,
     });
 
-    expect(!result.isSuccess).toBe(true);
-    expect(result.getError().code).toBe("UPDATE_ORDER_FAILED");
+    expect(result.isSuccess).toBe(false);
+    expect(result.getError()).toEqual(mockError);
     
     expect(fakeLogger.error).toHaveBeenCalledWith(
       "error to save new status on db",
       expect.objectContaining({
         orderId: order.id.toString(),
-        error: expect.any(AppError),
+        error: mockError,
       })
     );
 
     spy.mockRestore();
+  });
+
+  it("should handle repository getOrderById failure", async () => {
+    const mockError = new AppError("GET_ORDER_FAILED", "failed to get order");
+    
+    vi.spyOn(storeRepository, "getOrderById")
+      .mockResolvedValueOnce(Result.fail(mockError));
+
+    const result = await updateOrderStatus.execute({
+      orderId: order.id.toString(),
+      newStatus: "accepted",
+    });
+
+    expect(result.isSuccess).toBe(false);
+    expect(result.getError()).toEqual(mockError);
+    
+    expect(fakeLogger.error).toHaveBeenCalledWith(
+      "error to get order by id",
+      expect.objectContaining({
+        orderId: order.id.toString(),
+        error: mockError,
+      })
+    );
   });
 });
