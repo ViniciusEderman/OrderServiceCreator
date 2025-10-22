@@ -1,9 +1,10 @@
+import "reflect-metadata"
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { PublisherOrder } from "@/domain/order/application/use-cases/publisher-order";
 import { IMessageBroker } from "@/domain/interfaces/message-broker";
 import { Logger } from "@/domain/interfaces/logger";
 import { Order } from "@/domain/order/enterprise/entities/order";
-import { Result, DomainError } from "@/shared/core/result";
+import { Result, AppError } from "@/shared/core/result";
 
 const fakeLogger: Logger = {
   info: vi.fn(),
@@ -25,9 +26,8 @@ describe("PublisherOrder Use Case", () => {
   beforeEach(() => {
     publisher = new PublisherOrder(fakeLogger, fakeMessageBroker as any);
     order = Order.create({
-      clientId: "fake-client-123",
+      clientId: "83f87c4f-5480-41f4-84e7-b624284c272c",
       statusHistory: [{ status: "pending", updatedAt: new Date() }],
-      createdAt: new Date(),
     });
 
     vi.clearAllMocks();
@@ -35,12 +35,14 @@ describe("PublisherOrder Use Case", () => {
 
   it("should publish the order successfully", async () => {
     (fakeMessageBroker.publish as any).mockResolvedValue(
-      Result.ok<void, DomainError>(undefined)
+      Result.ok(undefined)
     );
 
     const result = await publisher.publish(order);
 
     expect(result.isSuccess).toBe(true);
+    expect(fakeMessageBroker.publish).toHaveBeenCalledWith("orders", order);
+    
     expect(fakeLogger.info).toHaveBeenCalledWith(
       "publishing order...",
       expect.objectContaining({ orderId: order.id.toString() })
@@ -52,19 +54,35 @@ describe("PublisherOrder Use Case", () => {
   });
 
   it("should return failure if broker.publish fails", async () => {
-    const fakeError = new DomainError("BROKER_ERROR", "Broker failed");
+    const fakeError = new AppError("BROKER_FAILURE", "failed to publish message to rabbitmq");
 
     (fakeMessageBroker.publish as any).mockResolvedValue(
-      Result.fail<void, DomainError>(fakeError)
+      Result.fail(fakeError)
     );
 
     const result = await publisher.publish(order);
 
-    expect(result.isFailure).toBe(true);
-    expect(result.getError().code).toBe("PUBLICATION_FAILURE");
+    expect(result.isSuccess).toBe(false);
+    expect(result.getError()).toEqual(fakeError);
     expect(fakeLogger.error).toHaveBeenCalledWith(
       "failed to publish order",
-      expect.objectContaining({ orderId: order.id.toString() })
+      expect.objectContaining({ 
+        orderId: order.id.toString(),
+        error: fakeError 
+      })
     );
+  });
+
+  it("should handle broker connection issues", async () => {
+    const connectionError = new AppError("BROKER_CONNECTION_FAILED", "failed to connect to rabbitmq");
+
+    (fakeMessageBroker.publish as any).mockResolvedValue(
+      Result.fail(connectionError)
+    );
+
+    const result = await publisher.publish(order);
+
+    expect(result.isSuccess).toBe(false);
+    expect(result.getError().code).toBe("BROKER_CONNECTION_FAILED");
   });
 });

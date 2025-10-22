@@ -55,7 +55,10 @@ export class Order extends Entity<OrderProps> {
     if (this.currentStatus === newStatus) return;
 
     const now = new Date();
-    this.props.statusHistory.push({ status: newStatus, updatedAt: now });
+    this.props.statusHistory = [
+      ...this.props.statusHistory,
+      { status: newStatus, updatedAt: now },
+    ];
     this.props.updatedAt = now;
   }
 }

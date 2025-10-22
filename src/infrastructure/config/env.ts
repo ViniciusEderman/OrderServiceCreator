@@ -14,4 +14,5 @@ function requiredEnv(key: string): string {
 export const env = {
   PORT: requiredEnv('PORT'),
   DATABASE_URL: requiredEnv('DATABASE_URL'),
+  RABBITMQ_URL: requiredEnv('RABBITMQ_URL')
 };

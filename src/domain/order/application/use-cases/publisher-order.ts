@@ -2,9 +2,9 @@ import { inject, injectable } from "tsyringe";
 import { Logger } from "@/domain/interfaces/logger";
 import { IMessageBroker } from "@/domain/interfaces/message-broker";
 import { Order } from "@/domain/order/enterprise/entities/order";
-import { DomainError, Result } from "@/shared/core/result";
+import { AppError, Result } from "@/shared/core/result";
 
-type PublishResult = Result<void, DomainError>;
+type PublishResult = Result<AppError | void>;
 
 @injectable()
 export class PublisherOrder {
@@ -20,26 +20,19 @@ export class PublisherOrder {
 
     const publishResult = await this.messageBroker.publish("orders", order);
 
-    if (publishResult.isFailure) {
+    if (!publishResult.isSuccess) {
       this.logger.error("failed to publish order", {
         orderId: order.id.toString(),
+        error: publishResult.getError(),
       });
 
-      return Result.fail<void, DomainError>(
-        new DomainError(
-          "PUBLICATION_FAILURE",
-          "the system failed to finalize the order publication process.",
-          {
-            orderId: order.id.toString(),
-            originalError: publishResult.getError(),
-          }
-        )
-      );
+      return Result.fail(publishResult.getError());
     }
+    
     this.logger.info("order published successfully", {
       orderId: order.id.toString(),
     });
 
-    return Result.ok<void, DomainError>(undefined);
+    return Result.ok(undefined);
   }
 }

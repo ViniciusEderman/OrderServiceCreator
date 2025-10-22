@@ -7,5 +7,9 @@ export default defineConfig({
     globals: true,
     clearMocks: true,
     testTimeout: 15000,
+    coverage: {
+      provider: 'istanbul',
+      include: ["src/domain/order/application/use-cases/**"]
+    },
   },
 });

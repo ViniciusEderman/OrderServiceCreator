@@ -1,10 +1,17 @@
+import { injectable, inject } from "tsyringe";
 import { StoreRepository } from "@/domain/interfaces/store-repository";
 import { Order } from "@/domain/order/enterprise/entities/order";
-import { InfraError, Result } from "@/shared/core/result";
+import { Logger } from "@/domain/interfaces/logger";
+import { AppError, Result } from "@/shared/core/result";
 import { prisma } from "@/infrastructure/db/prisma";
+import { Status } from "@/domain/order/enterprise/types/status";
+import { UniqueEntityID } from "@/shared/entities/unique-entity-id";
 
+@injectable()
 export class PrismaStoreRepository implements StoreRepository {
-  async storeOrder(order: Order): Promise<Result<void, InfraError>> {
+  constructor(@inject("Logger") private logger: Logger) {}
+
+  async storeOrder(order: Order): Promise<Result<void>> {
     try {
       await prisma.order.create({
         data: {
@@ -15,18 +22,24 @@ export class PrismaStoreRepository implements StoreRepository {
           updatedAt: order.updatedAt,
         },
       });
-
-      return Result.ok<void, InfraError>(undefined);
-    } catch (error) {
+      this.logger.info("order stored in db", { orderId: order.id.toString() });
+      return Result.ok(undefined);
+    } 
+    catch (error) {
+      this.logger.error("failed to store order in db", {
+        orderId: order.id.toString(),
+        error,
+      });
       return Result.fail(
-        new InfraError("STORE_ORDER_FAILED", "Failed to store order", {
+        new AppError("STORE_ORDER_FAILED", "failed to store order", {
+          orderId: order.id.toString(),
           originalError: error instanceof Error ? error.message : String(error),
         })
       );
     }
   }
 
-  async updateOrder(order: Order): Promise<Result<void, InfraError>> {
+  async updateOrder(order: Order): Promise<Result<void>> {
     try {
       await prisma.order.update({
         where: { id: order.id.toString() },
@@ -36,42 +49,55 @@ export class PrismaStoreRepository implements StoreRepository {
         },
       });
 
-      return Result.ok<void, InfraError>(undefined);
-    } catch (error) {
+      this.logger.info("order updated in db", { orderId: order.id.toString() });
+      return Result.ok(undefined);
+    } 
+    catch (error) {
+      this.logger.error("failed to update order in db", {
+        orderId: order.id.toString(),
+        error,
+      });
       return Result.fail(
-        new InfraError("UPDATE_ORDER_FAILED", "Failed to update order", {
+        new AppError("UPDATE_ORDER_FAILED", "failed to update order", {
+          orderId: order.id.toString(),
           originalError: error instanceof Error ? error.message : String(error),
         })
       );
     }
   }
 
-  async getOrderById(id: string): Promise<Result<Order, InfraError>> {
+  async getOrderById(id: string): Promise<Result<Order>> {
     try {
       const orderData = await prisma.order.findUnique({
         where: { id },
       });
 
       if (!orderData) {
+        this.logger.warn("order not found", { orderId: id });
         return Result.fail(
-          new InfraError("ORDER_NOT_FOUND", `Order with id ${id} not found`)
+          new AppError("ORDER_NOT_FOUND", `order with id ${id} not found`, {
+            orderId: id,
+          })
         );
       }
-
       const order = Order.create(
         {
           clientId: orderData.clientId,
-          statusHistory: orderData.statusHistory,
+          statusHistory: orderData.statusHistory as unknown as Array<{ status: Status; updatedAt: Date; }>,
           createdAt: orderData.createdAt,
           updatedAt: orderData.updatedAt,
         },
-        orderData.id
+        new UniqueEntityID(orderData.id)
       );
 
+      this.logger.info("order retrieved from db", { orderId: id });
       return Result.ok(order);
-    } catch (error) {
+    } 
+    catch (error) {
+      this.logger.error("failed to get order from db", { orderId: id, error });
       return Result.fail(
-        new InfraError("GET_ORDER_FAILED", "Failed to get order by id", {
+        new AppError("GET_ORDER_FAILED", "failed to get order by id", {
+          orderId: id,
           originalError: error instanceof Error ? error.message : String(error),
         })
       );

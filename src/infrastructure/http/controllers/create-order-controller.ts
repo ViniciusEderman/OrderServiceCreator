@@ -1,24 +1,45 @@
-import { FastifyRequest, FastifyReply } from "fastify";
 import { container } from "tsyringe";
+import { FastifyRequest, FastifyReply } from "fastify";
+import { Logger } from "@/domain/interfaces/logger";
 import { CreateAndPublishOrder } from "@/domain/order/application/use-cases/order-orchestrator";
-import { CreateOrderSchema } from "@/presentation/validators/create-order-validator";
+import { CreateOrderSchema } from "@/infrastructure/http/validators/create-order-validator";
+import { OrderPresenter } from "@/infrastructure/http/presenters/order-presenter";
 
-export class CreateOrderController {
-  constructor(private createAndPublishOrder: CreateAndPublishOrder) {}
+const createAndPublisherOrder = container.resolve(CreateAndPublishOrder);
 
-  async handle(request: FastifyRequest, reply: FastifyReply) {
-    const parse = CreateOrderSchema.safeParse(request.body);
+const logger = container.resolve<Logger>("Logger");
 
-    if (!parse.success) {
-      return reply.status(400).send({ error: parse.error.flatten().fieldErrors });
-    }
+export async function CreateOrderController(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  
+  const parse = CreateOrderSchema.safeParse(request.body);
 
-    const result = await this.createAndPublishOrder.execute(parse.data);
+  if (!parse.success) {
+    logger.warn("validation error in CreateOrderController", {
+      errors: parse.error.flatten().fieldErrors,
+      body: request.body,
+    });
 
-    if (result.isFailure) {
-      return reply.status(400).send({ error: result.getError()});
-    }
-
-    return reply.status(201).send(result.getValue());
+    return reply.status(400).send({
+      error: "invalid request payload",
+    });
   }
+
+  const result = await createAndPublisherOrder.execute(parse.data);
+
+  if (!result.isSuccess) {
+    logger.error("create and publisher failed in CreateOrderController", {
+      error: result.getError(),
+      data: parse.data,
+    });
+
+    return reply.status(400).send({
+      error: "operation failed",
+    });
+  }
+
+  const order = result.getValue();
+  return reply.status(201).send(OrderPresenter.toHTTP(order));
 }

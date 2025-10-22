@@ -3,9 +3,9 @@ import { StoreRepository } from "@/domain/interfaces/store-repository";
 import { Status } from "@/domain/order/enterprise/types/status";
 import { Order } from "@/domain/order/enterprise/entities/order";
 import { Logger } from "@/domain/interfaces/logger";
-import { DomainError, Result } from "@/shared/core/result";
+import { Result } from "@/shared/core/result";
 
-type CreateOrderUseCaseResponse = Result<Order, DomainError>;
+type CreateOrderUseCaseResponse = Result<Order>;
 
 export interface CreateOrderUseCaseRequest {
   status: Status;
@@ -23,20 +23,13 @@ export class CreateOrder {
     status,
     clientId,
   }: CreateOrderUseCaseRequest): Promise<CreateOrderUseCaseResponse> {
-    if (!clientId || typeof clientId !== "string" || clientId.trim() === "") {
-      this.logger.info("invalid or empty clientId", { clientId });
-
-      return Result.fail(
-        new DomainError(
-          "INVALID_CLIENT_ID",
-          "the clientId is required and must be a non-empty string",
-          { clientId }
-        )
-      );
-    }
+    this.logger.info("creating order...", {
+      clientId: clientId,
+      status: status,
+    });
 
     const order = Order.create({
-      clientId,
+      clientId: String(clientId),
       statusHistory: [
         {
           status,
@@ -47,7 +40,7 @@ export class CreateOrder {
 
     const storeOrderResult = await this.storeRepository.storeOrder(order);
 
-    if (storeOrderResult.isFailure) {
+    if (!storeOrderResult.isSuccess) {
       this.logger.error("error to save order on db", {
         orderId: order.id.toString(),
         error: storeOrderResult.getError(),

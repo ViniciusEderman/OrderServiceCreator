@@ -4,6 +4,7 @@
     "module": "commonjs",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "types": ["reflect-metadata"],
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,

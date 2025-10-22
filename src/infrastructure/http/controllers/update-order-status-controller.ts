@@ -1,27 +1,48 @@
+import { container } from "tsyringe";
 import { FastifyRequest, FastifyReply } from "fastify";
+import { Logger } from "@/domain/interfaces/logger";
 import { UpdateOrderStatus } from "@/domain/order/application/use-cases/update-status-order";
-import { UpdateOrderSchema } from "@/presentation/validators/update-order-validator";
+import { UpdateOrderSchema } from "@/infrastructure/http/validators/update-order-validator";
+import { OrderPresenter } from "@/infrastructure/http/presenters/order-presenter";
 
-export class UpdateOrderStatusController {
-  constructor(private updateOrderStatus: UpdateOrderStatus) {}
+const updateOrderStatus = container.resolve(UpdateOrderStatus);
 
-  async handle(request: FastifyRequest, reply: FastifyReply) {
-    const { id } = request.params as { id: string };
-    const parse = UpdateOrderSchema.safeParse(request.body);
+const logger = container.resolve<Logger>("Logger");
 
-    if (!parse.success) {
-      return reply.status(400).send({ error: parse.error.flatten().fieldErrors });
-    }
+export async function UpdateOrderStatusController(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const { id } = request.params as { id: string };
+  const parse = UpdateOrderSchema.safeParse(request.body);
 
-    const result = await this.updateOrderStatus.execute({
-      orderId: id,
-      newStatus: parse.data.newStatus,
+  if (!parse.success) {
+    logger.warn("validation error in UpdateOrderStatusController", {
+      errors: parse.error.flatten().fieldErrors,
+      body: request.body,
     });
 
-    if (result.isFailure) {
-      return reply.status(400).send({ error: result.getError().message });
-    }
-
-    return reply.status(200).send(result.getValue());
+    return reply.status(400).send({
+      error: "invalid request payload",
+    });
   }
+
+  const result = await updateOrderStatus.execute({
+    orderId: id,
+    newStatus: parse.data.newStatus,
+  });
+
+  if (!result.isSuccess) {
+    logger.error("create and publisher failed in UpdateOrderStatusController", {
+      error: result.getError(),
+      data: parse.data,
+    });
+
+    return reply.status(400).send({
+      error: "operation failed",
+    });
+  }
+
+  const order = result.getValue();
+  return reply.status(200).send(OrderPresenter.toHTTP(order));
 }
