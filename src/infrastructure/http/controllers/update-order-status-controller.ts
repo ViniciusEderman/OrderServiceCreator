@@ -5,14 +5,12 @@ import { UpdateOrderStatus } from "@/domain/order/application/use-cases/update-s
 import { UpdateOrderSchema } from "@/infrastructure/http/validators/update-order-validator";
 import { OrderPresenter } from "@/infrastructure/http/presenters/order-presenter";
 
-const updateOrderStatus = container.resolve(UpdateOrderStatus);
-
-const logger = container.resolve<Logger>("Logger");
-
 export async function UpdateOrderStatusController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
+  const updateOrderStatus = container.resolve(UpdateOrderStatus);
+  const logger = container.resolve<Logger>("Logger");
   const { id } = request.params as { id: string };
   const parse = UpdateOrderSchema.safeParse(request.body);
 
