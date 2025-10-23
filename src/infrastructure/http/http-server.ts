@@ -10,13 +10,18 @@ export async function createServer() {
   const app = Fastify({ logger: true });
 
   app.register(fastifyHelmet);
-  
+
   await app.register(fastifyRateLimit, {
     max: 100,
     timeWindow: "1 minute",
-    errorResponseBuilder: (req, context) => ({
+    keyGenerator: (request) => {
+      const token = request.headers["apikey"];
+      if (!token) return request.ip;
+      return token as string;
+    },
+    errorResponseBuilder: () => ({
       error: "too many requests",
-      retryAfter: context.after,
+      statusCode: 429,
     }),
   });
 
@@ -35,6 +40,6 @@ export async function createServer() {
   });
 
   await app.register(orderRoutes, { prefix: "/api/v1" });
-
+  
   return app;
 }

@@ -1,11 +1,11 @@
 import { injectable, inject } from "tsyringe";
+import { prisma } from "@/infrastructure/db/prisma";
 import { StoreRepository } from "@/domain/interfaces/store-repository";
 import { Order } from "@/domain/order/enterprise/entities/order";
-import { Logger } from "@/domain/interfaces/logger";
-import { AppError, Result } from "@/shared/core/result";
-import { prisma } from "@/infrastructure/db/prisma";
 import { Status } from "@/domain/order/enterprise/types/status";
+import { Logger } from "@/domain/interfaces/logger";
 import { UniqueEntityID } from "@/shared/entities/unique-entity-id";
+import { AppError, Result } from "@/shared/core/result";
 
 @injectable()
 export class PrismaStoreRepository implements StoreRepository {

@@ -1,4 +1,4 @@
-ORDER:
+# ORDER:
     [] - criação de pedido
     [] - atualização do pedido(status: Status)
     
@@ -24,12 +24,12 @@ DOCKER:
 docker-compose build --no-cache && docker-compose up
 
 # Arquitetura: 
-Clean Architecture / Hexagonal Architecture (Ports & Adapters)
-Motivo -> "O domínio é o centro da aplicação e tudo o mais deve depender dele — nunca o contrário." - by Robert C. Martin
-As interfaces fazem o papel de Ports, enquanto suas implementações concretas são os Adapters.
-Uso do conceito DIP(SOLID) --> Testabilidade(mocks de use-cases) + baixo acoplamento + alta capacidade de evolução e substituição de tecnologias(trocar o prisma por outro ORM ou trocar o winston por outro logging)
-Order.create() implementa um Factory Method(pattern)
+    Clean Architecture / Hexagonal Architecture (Ports & Adapters)
+    Motivo -> "O domínio é o centro da aplicação e tudo o mais deve depender dele — nunca o contrário." - by Robert C. Martin
+    As interfaces fazem o papel de Ports, enquanto suas implementações concretas são os Adapters.
+    Uso do conceito DIP(SOLID) --> Testabilidade(mocks de use-cases) + baixo acoplamento + alta capacidade de evolução e substituição de tecnologias(trocar o prisma por outro ORM ou trocar o winston por outro logging)
+    Order.create() implementa um Factory Method(pattern)
 
-MELHORIAS para implementar:
-Rota de update como será publicado na fila para o consumo do NotificationService?
-Implementar logica de retry para fila 
+# MELHORIAS para implementar:
+    Rota de update como será publicado na fila para o consumo do NotificationService?
+    Implementar logica de retry para fila 
