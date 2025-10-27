@@ -1,6 +1,6 @@
 import { Entity } from "@/shared/entities/entity";
-import { Status } from "@/domain/order/enterprise/types/status";
 import { UniqueEntityID } from "@/shared/entities/unique-entity-id";
+import { Status } from "@/domain/order/enterprise/types/status";
 import { Optional } from "@/shared/entities/optional";
 
 export interface OrderProps {

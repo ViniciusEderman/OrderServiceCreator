@@ -1,12 +1,13 @@
 import { FastifyInstance } from "fastify";
 import { CreateOrderController } from "@/infrastructure/http/controllers/create-order-controller";
 import { UpdateOrderStatusController } from "@/infrastructure/http/controllers/update-order-status-controller";
-
+import { ApiAuthPlugin } from "@/infrastructure/http/plugins/api-auth";
 
 export async function orderRoutes(app: FastifyInstance) {
   app.post(
     "/create-order",
     {
+      onRequest: [ApiAuthPlugin],
       schema: {
         tags: ["Orders"],
         summary: "Create a new order",
@@ -17,7 +18,6 @@ export async function orderRoutes(app: FastifyInstance) {
           properties: {
             clientId: {
               type: "string",
-              format: "uuid",
               description: "UUID from client",
             },
             status: {
@@ -33,7 +33,7 @@ export async function orderRoutes(app: FastifyInstance) {
             type: "object",
             properties: {
               id: { type: "string", format: "uuid" },
-              clientId: { type: "string", format: "uuid" },
+              clientId: { type: "string" },
               status: {
                 type: "string",
                 enum: ["pending", "accepted", "finished", "canceled"],
@@ -57,6 +57,7 @@ export async function orderRoutes(app: FastifyInstance) {
   app.patch(
     "/orders/:id/status",
     {
+      onRequest: [ApiAuthPlugin],
       schema: {
         tags: ["Orders"],
         summary: "Update order status",
@@ -64,7 +65,7 @@ export async function orderRoutes(app: FastifyInstance) {
         params: {
           type: "object",
           properties: {
-            id: { type: "string", format: "uuid", description: "ID do pedido" },
+            id: { type: "string", format: "uuid", description: "order id" },
           },
           required: ["id"],
         },
