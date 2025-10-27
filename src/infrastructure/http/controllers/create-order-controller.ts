@@ -1,7 +1,7 @@
 import { container } from "tsyringe";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { Logger } from "@/domain/interfaces/logger";
-import { CreateAndPublishOrder } from "@/domain/order/application/use-cases/order-orchestrator";
+import { OrderOrchestrator } from "@/domain/order/application/use-cases/order-orchestrator";
 import { CreateOrderSchema } from "@/infrastructure/http/validators/create-order-validator";
 import { OrderPresenter } from "@/infrastructure/http/presenters/order-presenter";
 
@@ -10,7 +10,7 @@ export async function CreateOrderController(
   reply: FastifyReply
 ) {
   const parse = CreateOrderSchema.safeParse(request.body);
-  const createAndPublisherOrder = container.resolve(CreateAndPublishOrder);
+  const createAndPublisherOrder = container.resolve(OrderOrchestrator);
   const logger = container.resolve<Logger>("Logger");
 
   if (!parse.success) {
@@ -24,7 +24,7 @@ export async function CreateOrderController(
     });
   }
 
-  const result = await createAndPublisherOrder.execute(parse.data);
+  const result = await createAndPublisherOrder.createOrderAndPublisher(parse.data);
 
   if (!result.isSuccess) {
     logger.error("create and publisher failed in CreateOrderController", {

@@ -14,5 +14,10 @@ function requiredEnv(key: string): string {
 export const env = {
   PORT: requiredEnv('PORT'),
   DATABASE_URL: requiredEnv('DATABASE_URL'),
-  RABBITMQ_URL: requiredEnv('RABBITMQ_URL')
+  RABBITMQ_URL: requiredEnv('RABBITMQ_URL'),
+  SERVICE_TOKENS: {
+    "service-a": requiredEnv("SERVICE_TOKEN_SERVICE_A"),
+    "service-b": requiredEnv("SERVICE_TOKEN_SERVICE_B"),
+    "test-admin": requiredEnv("SERVICE_TOKEN_TEST_ADMIN"),
+  } as Record<string, string>,
 };
