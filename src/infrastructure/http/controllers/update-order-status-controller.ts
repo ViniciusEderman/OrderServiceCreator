@@ -1,7 +1,7 @@
 import { container } from "tsyringe";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { Logger } from "@/domain/interfaces/logger";
-import { UpdateOrderStatus } from "@/domain/order/application/use-cases/update-status-order";
+import { OrderOrchestrator } from "@/domain/order/application/use-cases/order-orchestrator";
 import { UpdateOrderSchema } from "@/infrastructure/http/validators/update-order-validator";
 import { OrderPresenter } from "@/infrastructure/http/presenters/order-presenter";
 
@@ -9,7 +9,7 @@ export async function UpdateOrderStatusController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const updateOrderStatus = container.resolve(UpdateOrderStatus);
+  const orderOrchestrator = container.resolve(OrderOrchestrator);
   const logger = container.resolve<Logger>("Logger");
   const { id } = request.params as { id: string };
   const parse = UpdateOrderSchema.safeParse(request.body);
@@ -18,6 +18,7 @@ export async function UpdateOrderStatusController(
     logger.warn("validation error in UpdateOrderStatusController", {
       errors: parse.error.flatten().fieldErrors,
       body: request.body,
+      orderId: id,
     });
 
     return reply.status(400).send({
@@ -25,7 +26,7 @@ export async function UpdateOrderStatusController(
     });
   }
 
-  const result = await updateOrderStatus.execute({
+  const result = await orderOrchestrator.updateOrderAndPublisher({
     orderId: id,
     newStatus: parse.data.newStatus,
   });
@@ -33,10 +34,11 @@ export async function UpdateOrderStatusController(
   if (!result.isSuccess) {
     logger.error("create and publisher failed in UpdateOrderStatusController", {
       error: result.getError(),
+      orderId: id,
       data: parse.data,
     });
 
-    return reply.status(400).send({
+    return reply.status(500).send({
       error: "operation failed",
     });
   }

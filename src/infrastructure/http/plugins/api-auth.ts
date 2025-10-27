@@ -1,13 +1,8 @@
 import { onRequestHookHandler } from "fastify";
 import { container } from "tsyringe";
 import { Logger } from "@/domain/interfaces/logger";
+import { env } from "@/infrastructure/config/env";
 
-// mock até pensar onde vou armazenar as keys
-const SERVICE_TOKENS: Record<string, string> = {
-  "service-a": "0QabdgAhZ5P1GzYVmArrLOYjWWvTrBei",
-  "service-b": "pfxtLKzmSKNlXptjqa25xQ9AcUslnWEv",
-  "test-admin": "Rh98HCraYTyUbM7376gD9YlLMqWV5LqgGhxnWELKOwm0t1YV",
-};
 
 export const ApiAuthPlugin: onRequestHookHandler = async (request, reply) => {
   const token = request.headers["apikey"];
@@ -22,8 +17,8 @@ export const ApiAuthPlugin: onRequestHookHandler = async (request, reply) => {
     return reply.status(401).send({ error: "unauthorized" });
   }
 
-  const serviceName = Object.keys(SERVICE_TOKENS).find(
-    (key) => SERVICE_TOKENS[key] === token
+  const serviceName = Object.keys(env.SERVICE_TOKENS).find(
+    (key) => env.SERVICE_TOKENS[key] === token
   );
 
   if (!serviceName) {
