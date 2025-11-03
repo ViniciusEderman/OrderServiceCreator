@@ -35,6 +35,10 @@ export class Order extends Entity<OrderProps> {
     this.props.updatedAt = new Date();
   }
 
+  getVersion(): Date {
+    return this.props.updatedAt ?? this.props.createdAt;
+  }
+
   static create(
     props: Optional<OrderProps, "createdAt" | "updatedAt">,
     id?: UniqueEntityID

@@ -1,56 +1,44 @@
 import "reflect-metadata";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { CreateOrder } from "@/domain/order/application/use-cases/create-order";
 import { Order } from "@/domain/order/enterprise/entities/order";
-import { Logger } from "@/domain/interfaces/logger";
+import { expectFailure, expectSuccess } from "@/utils/assertions";
 import { AppError, Result } from "@/shared/core/result";
-import { InMemoryStoreRepository } from "@/infrastructure/repositories/mocks/in-memory-store-repository";
-
+import { makeCreateOrder, makeFakeOrderDto } from "@/factories/factories";
 
 describe("CreateOrder Use Case", () => {
-  let storeRepository: InMemoryStoreRepository;
-  let createOrder: CreateOrder;
+  let sut: ReturnType<typeof makeCreateOrder>["sut"];
 
-  const fakeLogger: Logger = {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  };
+  let storeRepository: ReturnType<
+    typeof makeCreateOrder
+  >["dependencies"]["storeRepository"];
+  
+  let fakeLogger: ReturnType<
+    typeof makeCreateOrder
+  >["dependencies"]["fakeLogger"];
 
   beforeEach(() => {
-    storeRepository = new InMemoryStoreRepository(fakeLogger);
-    createOrder = new CreateOrder(storeRepository, fakeLogger);
+    const factory = makeCreateOrder();
+    sut = factory.sut;
+    storeRepository = factory.dependencies.storeRepository;
+    fakeLogger = factory.dependencies.fakeLogger;
   });
 
   it("should create a successful order if clientId is valid", async () => {
-    const clientId = "83f87c4f-5480-41f4-84e7-b624284c272c";
+    const input = makeFakeOrderDto();
+    const result = await sut.execute(input);
+    const order = expectSuccess(result);
 
-    const result = await createOrder.execute({
-      status: "pending",
-      clientId,
-    });
-
-    expect(result.isSuccess).toBe(true);
-    
-    const order = result.getValue();
     expect(order).toBeInstanceOf(Order);
     expect(order.currentStatus).toBe("pending");
-    expect(order.clientId).toBe(clientId);
+    expect(order.clientId).toBe(input.clientId);
     expect(storeRepository.orders).toHaveLength(1);
   });
 
   it("should handle empty clientId by creating order with empty string", async () => {
-    const invalidClientId = "";
+    const input = makeFakeOrderDto({ clientId: "" });
+    const result = await sut.execute(input);
+    const order = expectSuccess(result);
 
-    const result = await createOrder.execute({
-      status: "pending",
-      clientId: invalidClientId,
-    });
-
-    expect(result.isSuccess).toBe(true);
-    
-    const order = result.getValue();
     expect(order.clientId).toBe("");
     expect(storeRepository.orders).toHaveLength(1);
   });
@@ -60,19 +48,15 @@ describe("CreateOrder Use Case", () => {
       "STORE_ORDER_FAILED",
       "failed to store order in memory"
     );
-    
+
     vi.spyOn(storeRepository, "storeOrder").mockResolvedValueOnce(
       Result.fail(mockError)
     );
 
-    const result = await createOrder.execute({
-      status: "pending",
-      clientId: "83f87c4f-5480-41f4-84e7-b624284c272c",
-    });
+    const result = await sut.execute(makeFakeOrderDto());
 
-    expect(result.isSuccess).toBe(false);
-    expect(result.getError()).toEqual(mockError);
-    
+    expectFailure(result, mockError);
+
     expect(fakeLogger.error).toHaveBeenCalledWith(
       "error to save order on db",
       expect.objectContaining({
@@ -83,18 +67,15 @@ describe("CreateOrder Use Case", () => {
   });
 
   it("should log info when creating order and on success", async () => {
-    const clientId = "83f87c4f-5480-41f4-84e7-b624284c272c";
+    const input = makeFakeOrderDto();
 
-    const result = await createOrder.execute({
-      status: "pending",
-      clientId,
-    })
-    
+    await sut.execute(input);
+
     expect(fakeLogger.info).toHaveBeenCalledWith(
       "creating order...",
       expect.objectContaining({
-        clientId: clientId,
-        status: "pending",
+        clientId: input.clientId,
+        status: input.status,
       })
     );
 
