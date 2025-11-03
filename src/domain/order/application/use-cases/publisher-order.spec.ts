@@ -1,34 +1,25 @@
-import "reflect-metadata"
+import "reflect-metadata";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { PublisherOrder } from "@/domain/order/application/use-cases/publisher-order";
 import { IMessageBroker } from "@/domain/interfaces/message-broker";
-import { Logger } from "@/domain/interfaces/logger";
 import { Order } from "@/domain/order/enterprise/entities/order";
+import { Logger } from "@/domain/interfaces/logger";
 import { Result, AppError } from "@/shared/core/result";
-
-const fakeLogger: Logger = {
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn(),
-};
-
-const fakeMessageBroker: IMessageBroker = {
-  connect: vi.fn(),
-  close: vi.fn(),
-  publish: vi.fn(),
-};
+import { makePublisherOrder, makeFakeOrderDto } from "@/factories/factories"; 
+import { expectFailure, expectVoidSuccess } from "@/utils/assertions"; 
 
 describe("PublisherOrder Use Case", () => {
   let publisher: PublisherOrder;
   let order: Order;
+  let fakeMessageBroker: IMessageBroker;
+  let fakeLogger: Logger;
 
   beforeEach(() => {
-    publisher = new PublisherOrder(fakeLogger, fakeMessageBroker as any);
-    order = Order.create({
-      clientId: "83f87c4f-5480-41f4-84e7-b624284c272c",
-      statusHistory: [{ status: "pending", updatedAt: new Date() }],
-    });
+    const factory = makePublisherOrder();
+    publisher = factory.sut;
+    fakeMessageBroker = factory.dependencies.fakeMessageBroker;
+    fakeLogger = factory.dependencies.fakeLogger;
+    order = makeFakeOrderDto();
 
     vi.clearAllMocks();
   });
@@ -39,8 +30,8 @@ describe("PublisherOrder Use Case", () => {
     );
 
     const result = await publisher.publish(order);
+    expectVoidSuccess(result);
 
-    expect(result.isSuccess).toBe(true);
     expect(fakeMessageBroker.publish).toHaveBeenCalledWith("orders", order);
     
     expect(fakeLogger.info).toHaveBeenCalledWith(
@@ -61,14 +52,13 @@ describe("PublisherOrder Use Case", () => {
     );
 
     const result = await publisher.publish(order);
+    const error = expectFailure(result, fakeError); 
 
-    expect(result.isSuccess).toBe(false);
-    expect(result.getError()).toEqual(fakeError);
     expect(fakeLogger.error).toHaveBeenCalledWith(
       "failed to publish order",
       expect.objectContaining({ 
         orderId: order.id.toString(),
-        error: fakeError 
+        error: error 
       })
     );
   });
@@ -81,8 +71,8 @@ describe("PublisherOrder Use Case", () => {
     );
 
     const result = await publisher.publish(order);
+    const error = expectFailure(result);
 
-    expect(result.isSuccess).toBe(false);
-    expect(result.getError().code).toBe("BROKER_CONNECTION_FAILED");
+    expect(error.code).toBe("BROKER_CONNECTION_FAILED");
   });
 });

@@ -70,23 +70,6 @@ export class Order extends Entity<OrderProps> {
 ### 3 -> Mensageria com RabbitMQ
 A publicação e o consumo de eventos são feitos via RabbitMQ, abstraído por uma interface MessageBroker, permitindo total desacoplamento da tecnologia.
 
-#### Mecanismo de Retry:
--Quando a fila principal está indisponível
-
--As mensagens são enviadas para uma fila temporária;
-
--Essa fila armazena os eventos até a fila principal retornar;
-
--Um worker faz a replicação automática assim que o sistema se estabiliza.
-
--Esse mecanismo garante:
-
--Resiliência a falhas temporárias
-
--Consistência eventual
-
--Não há perda de mensagens
-
 ### 4 -> Testabilidade e Coverage
 Testes escritos com Vitest, utilizando mocks de repositórios e brokers para garantir isolamento da camada de domínio.
 
@@ -129,7 +112,7 @@ Isso permite substituir o RabbitMQ, Prisma ou Logger por qualquer outra implemen
 
 -Inversão de dependência (DIP)
 
--Resiliência e retry em mensageria
+-Resiliência com Rabbit 
 
 -Testes unitários e coverage
 
