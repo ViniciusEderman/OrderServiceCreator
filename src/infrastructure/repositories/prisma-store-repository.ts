@@ -2,10 +2,9 @@ import { injectable, inject } from "tsyringe";
 import { prisma } from "@/infrastructure/db/prisma";
 import { StoreRepository } from "@/domain/interfaces/store-repository";
 import { Order } from "@/domain/order/enterprise/entities/order";
-import { Status } from "@/domain/order/enterprise/types/status";
 import { Logger } from "@/domain/interfaces/logger";
-import { UniqueEntityID } from "@/shared/entities/unique-entity-id";
 import { AppError, Result } from "@/shared/core/result";
+import { OrderPresenter } from "@/infrastructure/http/presenters/order-presenter";
 
 @injectable()
 export class PrismaStoreRepository implements StoreRepository {
@@ -14,18 +13,12 @@ export class PrismaStoreRepository implements StoreRepository {
   async storeOrder(order: Order): Promise<Result<void>> {
     try {
       await prisma.order.create({
-        data: {
-          id: order.id.toString(),
-          clientId: order.clientId,
-          statusHistory: order.statusHistory,
-          createdAt: order.createdAt,
-          updatedAt: order.updatedAt,
-        },
+        data: OrderPresenter.toPersistence(order),
       });
+
       this.logger.info("order stored in db", { orderId: order.id.toString() });
       return Result.ok(undefined);
-    } 
-    catch (error) {
+    } catch (error) {
       this.logger.error("failed to store order in db", {
         orderId: order.id.toString(),
         error,
@@ -41,18 +34,28 @@ export class PrismaStoreRepository implements StoreRepository {
 
   async updateOrder(order: Order): Promise<Result<void>> {
     try {
-      await prisma.order.update({
-        where: { id: order.id.toString() },
-        data: {
-          statusHistory: order.statusHistory,
-          updatedAt: order.updatedAt,
+      const result = await prisma.order.updateMany({
+        where: {
+          id: order.id.toString(),
+          updatedAt: order.getVersion(),
         },
+        data: OrderPresenter.toUpdatePersistence(order),
       });
 
+      if (result.count === 0) {
+        this.logger.warn("concurrent update detected", {
+          orderId: order.id.toString(),
+          newStatus: order.currentStatus,
+        });
+        return Result.fail(
+          new AppError("CONCURRENT_UPDATE", "order was updated concurrently", {
+            orderId: order.id.toString(),
+          })
+        );
+      }
       this.logger.info("order updated in db", { orderId: order.id.toString() });
       return Result.ok(undefined);
-    } 
-    catch (error) {
+    } catch (error) {
       this.logger.error("failed to update order in db", {
         orderId: order.id.toString(),
         error,
@@ -80,20 +83,11 @@ export class PrismaStoreRepository implements StoreRepository {
           })
         );
       }
-      const order = Order.create(
-        {
-          clientId: orderData.clientId,
-          statusHistory: orderData.statusHistory as unknown as Array<{ status: Status; updatedAt: Date; }>,
-          createdAt: orderData.createdAt,
-          updatedAt: orderData.updatedAt,
-        },
-        new UniqueEntityID(orderData.id)
-      );
 
+      const order = OrderPresenter.toDomain(orderData);
       this.logger.info("order retrieved from db", { orderId: id });
       return Result.ok(order);
-    } 
-    catch (error) {
+    } catch (error) {
       this.logger.error("failed to get order from db", { orderId: id, error });
       return Result.fail(
         new AppError("GET_ORDER_FAILED", "failed to get order by id", {

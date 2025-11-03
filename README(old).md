@@ -12,7 +12,7 @@ exemplo de body passado pra order-service
   status: "pending"
 }
 
-exemplo para update order: lembre d epassar o orderId na url
+exemplo para update order: lembre de passar o orderId na url
 {
   "newStatus": "finished"
 }
@@ -31,4 +31,8 @@ docker-compose build --no-cache && docker-compose up
     Order.create() implementa um Factory(pattern)
 
 # MELHORIAS para implementar:
-    Implementar logica de retry para fila 
+criar teste integração/e2e -> http/controllers 
+
+evitar race-conditions na parte de update:
+Requisição A: quer mudar de PENDING → APPROVED 
+Requisição B: quer mudar de PENDING → CANCELLED
