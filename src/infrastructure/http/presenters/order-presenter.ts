@@ -15,13 +15,16 @@ export class OrderPresenter {
   static toDomain(raw: any): Order {
     return Order.create(
       {
-        clientId: raw.client_id,
-        statusHistory: raw.status_history.map((item: any) => ({
-          status: item.status,
-          updatedAt: new Date(item.updated_at),
-        })),
-        createdAt: new Date(raw.created_at),
-        updatedAt: raw.updated_at ? new Date(raw.updated_at) : null,
+        clientId: raw.clientId,
+        statusHistory: Array.isArray(raw.statusHistory)
+          ? raw.statusHistory.map((item: any) => ({
+              status: item.status,
+              updatedAt: new Date(item.updatedAt),
+            }))
+          : [],
+
+        createdAt: new Date(raw.createdAt),
+        updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : null,
       },
       new UniqueEntityID(raw.id)
     );
@@ -30,19 +33,19 @@ export class OrderPresenter {
   static toPersistence(order: Order): any {
     return {
       id: order.id.toString(),
-      client_id: order.clientId,
-      status_history: order.statusHistory.map((item) => ({
+      clientId: order.clientId,
+      statusHistory: order.statusHistory.map((item) => ({
         status: item.status,
-        updated_at: item.updatedAt,
+        updatedAt: item.updatedAt,
       })),
-      created_at: order.createdAt,
-      updated_at: order.updatedAt,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
     };
   }
 
   static toUpdatePersistence(order: Order): Partial<any> {
     return {
-      statusHistory: order.statusHistory.map(item => ({
+      statusHistory: order.statusHistory.map((item) => ({
         status: item.status,
         updatedAt: item.updatedAt,
       })),
