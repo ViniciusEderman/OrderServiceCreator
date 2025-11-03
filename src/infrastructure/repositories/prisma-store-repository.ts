@@ -34,25 +34,11 @@ export class PrismaStoreRepository implements StoreRepository {
 
   async updateOrder(order: Order): Promise<Result<void>> {
     try {
-      const result = await prisma.order.updateMany({
-        where: {
-          id: order.id.toString(),
-          updatedAt: order.getVersion(),
-        },
+      await prisma.order.update({
+        where: { id: order.id.toString() },
         data: OrderPresenter.toUpdatePersistence(order),
       });
 
-      if (result.count === 0) {
-        this.logger.warn("concurrent update detected", {
-          orderId: order.id.toString(),
-          newStatus: order.currentStatus,
-        });
-        return Result.fail(
-          new AppError("CONCURRENT_UPDATE", "order was updated concurrently", {
-            orderId: order.id.toString(),
-          })
-        );
-      }
       this.logger.info("order updated in db", { orderId: order.id.toString() });
       return Result.ok(undefined);
     } catch (error) {
