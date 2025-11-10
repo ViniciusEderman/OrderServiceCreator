@@ -23,7 +23,6 @@ describe("UpdateOrderStatus Use Case", () => {
       id: "ad6409b3-0c27",
     });
     storeRepository.orders.push(order);
-    vi.clearAllMocks();
   });
 
   it("should update order status successfully", async () => {

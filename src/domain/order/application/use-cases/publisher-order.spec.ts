@@ -20,8 +20,6 @@ describe("PublisherOrder Use Case", () => {
     fakeMessageBroker = factory.dependencies.fakeMessageBroker;
     fakeLogger = factory.dependencies.fakeLogger;
     order = makeFakeOrderDto();
-
-    vi.clearAllMocks();
   });
 
   it("should publish the order successfully", async () => {
