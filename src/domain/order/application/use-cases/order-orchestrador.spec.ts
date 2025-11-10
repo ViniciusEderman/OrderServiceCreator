@@ -16,8 +16,6 @@ describe("OrderOrchestrator Use Case", () => {
   let mockUpdateOrder: { execute: Mock };
 
   beforeEach(() => {
-    vi.clearAllMocks();
-
     const factory = makeOrderOrchestrator();
     createAndPublishOrder = factory.sut;
     mockCreateOrder = factory.dependencies.mockCreateOrder;
